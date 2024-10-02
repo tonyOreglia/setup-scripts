@@ -9,7 +9,7 @@
       apt:
         name: aptitude
         state: latest
-        update_cache: true
+        update_cache: true  
 
     - name: Setup passwordless sudo
       lineinfile:
@@ -17,7 +17,7 @@
         state: present
         regexp: '^%sudo'
         line: '%sudo ALL=(ALL) NOPASSWD: ALL'
-        validate: '/usr/sbin/visudo -cf %s'
+        validate: '/usr/sbin/visudo -cf %s' 
 
     - name: Create a new regular user with sudo privileges
       user:
@@ -46,6 +46,8 @@
           - vim
           - git
           - ufw
+          - docker.io
+          - docker-compose
         state: latest
         update_cache: true
 
@@ -64,29 +66,30 @@
       community.general.ufw:
         direction: incoming
         default: deny
-
+    
     - name: UFW - Set default allow outgoing
       community.general.ufw:
         direction: outgoing
         default: allow
-
+    
     - name: UFW - Allow HTTP connections
       community.general.ufw:
         rule: allow
         port: 80
-
+    
     - name: UFW - Allow HTTPS connections
       community.general.ufw:
         rule: allow
         port: 443
-
+    
     - name: UFW - Allow 'Nginx Full'
       community.general.ufw:
         rule: allow
         name: "Nginx Full"
-
+    
 
     - name: UFW - Enable and deny by default
       community.general.ufw:
         state: enabled
         default: deny
+
