@@ -1,0 +1,92 @@
+---
+- hosts: hetznerVps
+  become: true
+  vars:
+    created_username: tony
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Setup passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Create a new regular user with sudo privileges
+      user:
+        name: "{{ created_username }}"
+        state: present
+        groups: sudo
+        append: true
+        create_home: true
+
+    - name: Set authorized key for remote user
+      ansible.posix.authorized_key:
+        user: "{{ created_username }}"
+        state: present
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa_digOceanVps.pub') }}"
+
+    - name: Disable password authentication for root
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+
+    - name: Update apt and install required system packages
+      apt:
+        pkg:
+          - vim
+          - git
+          - ufw
+        state: latest
+        update_cache: true
+
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: UFW - Allow SSH connections
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Set default deny incoming
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: UFW - Set default allow outgoing
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: UFW - Allow HTTP connections
+      community.general.ufw:
+        rule: allow
+        port: 80
+
+    - name: UFW - Allow HTTPS connections
+      community.general.ufw:
+        rule: allow
+        port: 443
+
+    - name: UFW - Allow 'Nginx Full'
+      community.general.ufw:
+        rule: allow
+        name: "Nginx Full"
+
+
+    - name: UFW - Enable and deny by default
+      community.general.ufw:
+        state: enabled
+        default: deny
