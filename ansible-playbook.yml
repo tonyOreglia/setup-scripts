@@ -40,21 +40,29 @@
         regexp: '^#?PermitRootLogin'
         line: 'PermitRootLogin prohibit-password'
 
+    # Unhold all Docker-related packages
+    - name: Unhold docker packages
+      ansible.builtin.command: apt-mark unhold docker.io docker-compose containerd
+
+
+    # Clear held packages
+    - name: Clear held packages
+      ansible.builtin.command:
+        cmd: apt-mark unhold containerd docker.io docker-ce
+
     - name: Update apt and install required system packages
       apt:
         pkg:
           - vim
           - git
           - ufw
-          - docker.io
-          - docker-compose
         state: latest
         update_cache: true
 
     - name: Install Nginx
       ansible.builtin.apt:
         name: nginx
-        state: present
+        state: absent
         update_cache: yes
 
     - name: UFW - Allow SSH connections
@@ -81,15 +89,20 @@
       community.general.ufw:
         rule: allow
         port: 443
-    
-    - name: UFW - Allow 'Nginx Full'
+  
+    - name: UFW - Allow 'Traefik HTTP and HTTPS'
       community.general.ufw:
         rule: allow
-        name: "Nginx Full"
-    
+        port: "80,443"
+        proto: tcp
+        comment: "Allow Traefik HTTP and HTTPS traffic"
 
     - name: UFW - Enable and deny by default
       community.general.ufw:
         state: enabled
         default: deny
+
+    - name: Install Docker using geerlingguy.docker role
+      include_role:
+        name: geerlingguy.docker
 
